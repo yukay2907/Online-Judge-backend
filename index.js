@@ -5,7 +5,7 @@ const { DBConnection } = require("./database/db.js");
 
 const authRoutes = require("./routes/authRoutes");
 const problemRoutes = require("./routes/problemRoutes");
-const errorHandler = require("./middlewares/errorHandler");
+const errorHandler = require("./middleware/errorHandler");
 
 const cookieParser = require("cookie-parser");
 
