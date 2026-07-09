@@ -27,7 +27,7 @@ const register = async (req, res) => {
     password: hashedPassword,
   });
   //generate a token for the user and send it
-  const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
+  const token = jwt.sign({ id: user._id, email }, process.env.JWT_SECRET_KEY, {
     expiresIn: "1h",
   });
   user.token = token;
@@ -55,7 +55,7 @@ const login = async (req, res) => {
     throw new ApiError(400, "Invalid email or password.");
   }
   //generate a token for the user and send it
-  const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
+  const token = jwt.sign({ id: user._id, email }, process.env.JWT_SECRET_KEY, {
     expiresIn: "1h",
   });
   user.token = token;

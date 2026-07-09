@@ -11,7 +11,7 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Access token is missing.");
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
   const user = await User.findById(decoded.id).select("-password"); //Because we never need the password after authentication
 

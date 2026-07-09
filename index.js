@@ -5,6 +5,7 @@ const { DBConnection } = require("./database/db.js");
 
 const authRoutes = require("./routes/authRoutes");
 const problemRoutes = require("./routes/problemRoutes");
+const submissionRoutes = require("./routes/submissionRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
 const cookieParser = require("cookie-parser");
@@ -17,6 +18,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes);
 app.use(errorHandler);
 
 app.listen(process.env.PORT, () => {
