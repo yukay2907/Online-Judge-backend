@@ -55,6 +55,49 @@ const createSubmission = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, submission, "Submission created successfully"));
 });
 
+const getMySubmissions = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const submissions = await Submission.find({
+    user: userId,
+  })
+    .populate("problem", "title difficulty")
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, submissions, "Submissions fetched successfully."),
+    );
+});
+
+const getSubmissionById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "Invalid Submission ID");
+  }
+
+  const submission = await Submission.findById(id);
+
+  if (!submission) {
+    throw new ApiError(404, "Submission Not Found");
+  }
+
+  if (!submission.user.equals(req.user._id)) {
+    throw new ApiError(403, "You are not authorized to view this submission.");
+  }
+
+  await submission.populate("problem", "title difficulty");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, submission, "Submission fetched succefully."));
+});
+
 module.exports = {
   createSubmission,
+  getMySubmissions,
+  getSubmissionById,
 };
