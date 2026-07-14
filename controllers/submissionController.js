@@ -34,22 +34,22 @@ const createSubmission = asyncHandler(async (req, res) => {
     code,
   });
 
-  try {
-    const result = await executeCode(code, language);
+  const result = await executeCode({
+    submissionId: submission._id,
+    code,
+    language,
+    testCases: existingProblem.testCases,
+  });
 
-    submission.status = "Completed";
-    submission.verdict = result.verdict;
-    submission.runtime = result.runtime;
-    submission.memory = result.memory;
+  submission.status = "Completed";
+  submission.verdict = result.verdict;
+  submission.runtime = result.runtime;
+  submission.memory = result.memory;
+  submission.stdout = result.stdout;
+  submission.stderr = result.stderr;
 
-    await submission.save();
-  } catch (error) {
-    submission.status = "Failed";
+  await submission.save();
 
-    await submission.save();
-
-    throw new ApiError(500, "Code execution failed");
-  }
   return res
     .status(201)
     .json(new ApiResponse(201, submission, "Submission created successfully"));

@@ -1,10 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
-const { stdout, stderr } = require("process");
-const { error } = require("console");
 
 const EXECUTION_TIMEOUT_MS = 3000;
+
+const EXECUTION_ERROR_TYPES = {
+  TIMEOUT: "TIMEOUT",
+  EXECUTION_FAILED: "EXECUTION_FAILED",
+};
+
+const PYTHON_EXECUTABLE = process.env.PYTHON_EXECUTABLE || "python";
 
 const createWorkingDirectory = async (submissionId) => {
   const workspacePath = path.join(
@@ -24,9 +29,11 @@ const createWorkingDirectory = async (submissionId) => {
 const writeSourceFile = async (workspacePath, code, language) => {
   const extensions = {
     python: ".py",
-    cpp: ".cpp",
-    java: ".java",
   };
+
+  if (!extensions[language]) {
+    throw new Error("Unsupported Language");
+  }
 
   const extension = extensions[language];
 
@@ -42,8 +49,6 @@ const runProgram = async (filePath, input) => {
 
   const runners = {
     ".py": runPython,
-    ".cpp": runCpp,
-    ".java": runJava,
   };
 
   const runner = runners[extension];
@@ -52,12 +57,12 @@ const runProgram = async (filePath, input) => {
     throw new Error("Unsupported Language");
   }
 
-  return await runner(filePath);
+  return await runner(filePath, input);
 };
 
 const runPython = (filePath, input) => {
   return new Promise((resolve, reject) => {
-    const child = spawn("py", [filePath]);
+    const child = spawn(PYTHON_EXECUTABLE, [filePath]);
 
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
@@ -115,33 +120,43 @@ const runPython = (filePath, input) => {
   });
 };
 
-const executeCode = async ({
-  submissionId,
-  code,
-  language,
-  input,
-  expectedOutput,
-}) => {
+const executeCode = async ({ submissionId, code, language, testCases }) => {
   try {
+    //create workspace
     const workspacePath = await createWorkingDirectory(submissionId);
 
+    //write source file
     const filePath = await writeSourceFile(workspacePath, code, language);
 
-    const { stdout, stderr } = await runProgram(filePath, input);
+    //loop
+    for (const testCase of testCases) {
+      //run program
+      const { stdout, stderr } = await runProgram(filePath, testCase.input);
 
-    const actualOutput = stdout.trim();
-    const expected = expectedOutput.trim();
+      //normalize
+      const actualOutput = stdout.trim();
+      const expectedOutput = testCase.output.trim();
 
-    const verdict = actualOutput === expected ? "Accepted" : "Wrong Answer";
-
+      //compare
+      if (actualOutput !== expectedOutput) {
+        return {
+          verdict: "Wrong Answer",
+          stdout,
+          stderr,
+          runtime: 0,
+          memory: 0,
+        };
+      }
+    }
     return {
-      verdict,
-      stdout,
-      stderr,
+      verdict: "Accepted",
+      stdout: "",
+      stderr: "",
       runtime: 0,
       memory: 0,
     };
   } catch (error) {
+    //compute verdict
     const verdict =
       error.type == EXECUTION_ERROR_TYPES.TIMEOUT
         ? "Time Limit Exceeded"
@@ -156,17 +171,11 @@ const executeCode = async ({
     };
   }
 };
-// const executeCode = async (code, language) => {
-//   return {
-//     verdict: "Accepted",
-//     runtime: 35,
-//     memory: 128,
-//   };
-// };
 
 module.exports = {
   createWorkingDirectory,
   writeSourceFile,
   runProgram,
   runPython,
+  executeCode,
 };

@@ -19,14 +19,18 @@ const problemSchema = new mongoose.Schema(
       enum: ["Easy", "Medium", "Hard"],
       required: true,
     },
-    sampleInput: {
-      type: String,
-      required: true,
-    },
-    sampleOutput: {
-      type: String,
-      required: true,
-    },
+    testCases: [
+      {
+        input: {
+          type: String,
+          required: true,
+        },
+        output: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

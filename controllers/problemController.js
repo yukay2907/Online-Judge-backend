@@ -4,12 +4,16 @@ const ApiError = require("../utils/ApiError");
 const ApiResponse = require("../utils/apiResponse");
 
 const createProblem = asyncHandler(async (req, res) => {
-  const { title, description, difficulty, sampleInput, sampleOutput } =
-    req.body;
+  const { title, description, difficulty, testCases } = req.body;
 
-  if (!(title && description && difficulty && sampleInput && sampleOutput)) {
-    throw new ApiError(400, "Please enter all the information.");
+  if (!title || !description || !difficulty) {
+    throw new ApiError(400, "All fields are required.");
   }
+
+  if (!Array.isArray(testCases) || testCases.length === 0) {
+    throw new ApiError(400, "Att least one test case must be provided.");
+  }
+
   const existingProblem = await Problem.findOne({ title });
   if (existingProblem) {
     throw new ApiError(400, "Problem with same name already exists.");
@@ -19,8 +23,7 @@ const createProblem = asyncHandler(async (req, res) => {
     title,
     description,
     difficulty,
-    sampleInput,
-    sampleOutput,
+    testCases,
   });
   return res
     .status(201)

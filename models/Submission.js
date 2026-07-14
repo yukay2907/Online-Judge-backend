@@ -23,7 +23,7 @@ const submissionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Running", "Completed", "Failed"],
+      enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
       required: true,
     },
@@ -43,6 +43,15 @@ const submissionSchema = new mongoose.Schema(
     },
     memory: {
       type: Number,
+    },
+    stdout: {
+      type: String,
+      default: "",
+    },
+
+    stderr: {
+      type: String,
+      default: "",
     },
   },
   {
