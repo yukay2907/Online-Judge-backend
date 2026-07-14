@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const { stdout, stderr } = require("process");
+const { error } = require("console");
 
 const EXECUTION_TIMEOUT_MS = 3000;
 
@@ -77,7 +79,7 @@ const runPython = (filePath, input) => {
 
     child.on("error", (error) => {
       clearTimeout(timeoutId);
-      reject(error);
+      return reject(error);
     });
 
     child.on("close", (code, signal) => {
@@ -87,28 +89,72 @@ const runPython = (filePath, input) => {
       const stderrOutput = stderr.join("");
 
       if (signal) {
-        return reject(new Error("Execution timed out"));
+        const executionError = new Error("Execution timed out");
+        executionError.type = EXECUTION_ERROR_TYPES.TIMEOUT;
+        return reject(executionError);
       }
 
       if (code === 0) {
-        resolve({
+        return resolve({
           stdout: output,
           stderr: stderrOutput,
         });
-      } else {
-        const executionError = new Error("Python execution failed");
-
-        executionError.stdout = output;
-        executionError.stderr = stderrOutput;
-        executionError.exitCode = code;
-
-        reject(executionError);
       }
+      const executionError = new Error("Python execution failed");
+      executionError.type = EXECUTION_ERROR_TYPES.EXECUTION_FAILED;
+
+      executionError.stdout = output;
+      executionError.stderr = stderrOutput;
+      executionError.exitCode = code;
+
+      return reject(executionError);
     });
 
     child.stdin.write(input ?? "");
     child.stdin.end();
   });
+};
+
+const executeCode = async ({
+  submissionId,
+  code,
+  language,
+  input,
+  expectedOutput,
+}) => {
+  try {
+    const workspacePath = await createWorkingDirectory(submissionId);
+
+    const filePath = await writeSourceFile(workspacePath, code, language);
+
+    const { stdout, stderr } = await runProgram(filePath, input);
+
+    const actualOutput = stdout.trim();
+    const expected = expectedOutput.trim();
+
+    const verdict = actualOutput === expected ? "Accepted" : "Wrong Answer";
+
+    return {
+      verdict,
+      stdout,
+      stderr,
+      runtime: 0,
+      memory: 0,
+    };
+  } catch (error) {
+    const verdict =
+      error.type == EXECUTION_ERROR_TYPES.TIMEOUT
+        ? "Time Limit Exceeded"
+        : "Runtime Error";
+
+    return {
+      verdict,
+      stdout: error.stdout ?? "",
+      stderr: error.stderr ?? "",
+      runtime: 0,
+      memory: 0,
+    };
+  }
 };
 // const executeCode = async (code, language) => {
 //   return {
