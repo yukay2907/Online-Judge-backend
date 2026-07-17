@@ -38,38 +38,54 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  //get all the data from frontend
   const { email, password } = req.body;
-  //check if all the data is entered
+
   if (!(email && password)) {
     throw new ApiError(400, "Enter all the information.");
   }
-  //check if the user exists in the db
+
   const user = await User.findOne({ email });
   if (!user) {
     throw new ApiError(400, "Invalid email or password.");
   }
-  //check if the correct password was entered
+
   const enteredPassword = await bcrypt.compare(password, user.password);
   if (!enteredPassword) {
     throw new ApiError(400, "Invalid email or password.");
   }
-  //generate a token for the user and send it
+
   const token = jwt.sign({ id: user._id, email }, process.env.JWT_SECRET_KEY, {
     expiresIn: "1h",
   });
   user.token = token;
   user.password = undefined;
-  //store token in cookies with options
+
   const options = {
     expiresIn: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    httpOnly: true, //only manipulate by server and not by your client/frontend
+    httpOnly: true,
   };
-  //send the token
+
   res
     .status(200)
     .cookie("token", token, options)
     .json(new ApiResponse(200, token, "You have successfully logged in!"));
 };
 
-module.exports = { register, login };
+const getCurrentUser = async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully."));
+};
+
+const logout = async (req, res) => {
+  const options = {
+    expiresIn: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("token", options)
+    .json(new ApiResponse(200, null, "Logged out successfully."));
+};
+
+module.exports = { register, login, getCurrentUser, logout };
