@@ -1,4 +1,6 @@
 const express = require("express");
+const cors = require("cors");
+
 const app = express();
 
 const { DBConnection } = require("./database/db.js");
@@ -11,6 +13,13 @@ const errorHandler = require("./middleware/errorHandler");
 const cookieParser = require("cookie-parser");
 
 DBConnection();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
