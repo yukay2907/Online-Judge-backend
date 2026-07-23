@@ -2,6 +2,7 @@ const Problem = require("../models/Problem");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const ApiResponse = require("../utils/apiResponse");
+const mongoose = require("mongoose");
 
 const createProblem = asyncHandler(async (req, res) => {
   const { title, description, difficulty, testCases } = req.body;
